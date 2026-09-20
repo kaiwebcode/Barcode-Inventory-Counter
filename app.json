@@ -46,7 +46,8 @@
           "cameraPermission": "Allow Barcode Inventory Counter to access your camera"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

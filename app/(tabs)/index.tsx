@@ -1,209 +1,379 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import {
+  Animated,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { getInventoryCounts } from "@/database/inventory-db";
+import type { InventoryCount } from "@/types/inventory";
+
+function ActionButton({
+  icon,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 25,
+      bounciness: 5,
+    }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        className="mb-3 flex-row items-center rounded-2xl border border-gray-100 bg-white p-4"
+      >
+        <View className="mr-4 h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+          <Ionicons name={icon} size={21} color="#2563EB" />
+        </View>
+
+        <View className="flex-1">
+          <Text className="text-[15px] font-semibold text-gray-900">
+            {title}
+          </Text>
+
+          <Text className="mt-1 text-xs text-gray-500">
+            {subtitle}
+          </Text>
+        </View>
+
+        <Ionicons name="chevron-forward" size={19} color="#9CA3AF" />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function OverviewCard({
+  icon,
+  title,
+  value,
+  subtitle,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  value: number;
+  subtitle: string;
+}) {
+  return (
+    <View className="flex-1 rounded-2xl border border-gray-100 bg-white p-4">
+      <View className="mb-3 h-9 w-9 items-center justify-center rounded-xl bg-blue-50">
+        <Ionicons name={icon} size={18} color="#2563EB" />
+      </View>
+
+      <Text className="text-2xl font-bold text-gray-900">
+        {value}
+      </Text>
+
+      <Text className="mt-1 text-sm font-semibold text-gray-800">
+        {title}
+      </Text>
+
+      <Text className="mt-1 text-[11px] leading-4 text-gray-400">
+        {subtitle}
+      </Text>
+    </View>
+  );
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
 
+  const [counts, setCounts] = useState<InventoryCount[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const data = await getInventoryCounts();
+
+      setCounts(data);
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Reload every time the dashboard becomes active.
+  // This means adding/deleting/submitting inventory
+  // will automatically update the dashboard.
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [loadDashboardData])
+  );
+
+  const totalProducts = counts.length;
+
+  const pendingCounts = counts.filter(
+    (item) => item.status === "pending"
+  ).length;
+
+  const submittedCounts = counts.filter(
+    (item) => item.status === "submitted"
+  ).length;
+
+  const expiredCounts = counts.filter((item) => {
+    if (!item.expiryDate) return false;
+
+    const expiry = new Date(item.expiryDate);
+    const today = new Date();
+
+    expiry.setHours(23, 59, 59, 999);
+    today.setHours(0, 0, 0, 0);
+
+    return expiry < today;
+  }).length;
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-[#F6F8FC]"
+    >
       <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-5 pb-8"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 110,
+        }}
       >
         {/* Header */}
-        <View className="mb-6 flex-row items-center justify-between pt-2">
-          <View className="flex-1 pr-4">
-            <Text className="text-[26px] font-extrabold tracking-tight text-slate-900">
+        <View className="flex-row items-center justify-between px-5 pb-5 pt-8">
+          <View>
+            <Text className="text-2xl font-bold text-gray-950">
               Inventory Counter
             </Text>
 
-            <Text className="mt-1 text-sm text-slate-500">
-              Keep your stock count accurate.
+            <Text className="mt-1 text-sm text-gray-500">
+              Manage your stock with ease
             </Text>
           </View>
 
-          <Pressable
-            className="h-11 w-11 items-center justify-center rounded-full bg-blue-50 active:opacity-70"
-            accessibilityRole="button"
-            accessibilityLabel="Profile"
-          >
+          <View className="h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white">
             <Ionicons
               name="person-outline"
-              size={20}
-              color="#2563EB"
+              size={21}
+              color="#374151"
             />
-          </Pressable>
+          </View>
         </View>
 
         {/* Scan Card */}
-        <View className="mb-7 overflow-hidden rounded-[24px] bg-blue-600 p-[22px]">
-          <View className="mb-[18px] h-[58px] w-[58px] items-center justify-center rounded-[18px] bg-white/15">
-            <Ionicons
-              name="barcode-outline"
-              size={30}
-              color="#FFFFFF"
-            />
-          </View>
+        <View className="mx-5 mt-6 overflow-hidden rounded-3xl bg-blue-600 p-5">
+          <View className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-500 opacity-40" />
+          <View className="absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-blue-700 opacity-40" />
 
-          <Text className="text-[22px] font-extrabold text-white">
-            Scan Barcode
-          </Text>
-
-          <Text className="mt-2 text-sm leading-[21px] text-blue-100">
-            Scan a product barcode to quickly find its expected quantity and
-            start an inventory count.
-          </Text>
-
-          <Pressable
-            onPress={() => router.push("/product-lookup")}
-            className="mt-5 h-[52px] flex-row items-center justify-center gap-2 rounded-[15px] bg-white active:opacity-80"
-          >
-            <Ionicons
-              name="scan-outline"
-              size={19}
-              color="#1D4ED8"
-            />
-
-            <Text className="text-[15px] font-bold text-blue-700">
-              Start Scanning
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Overview */}
-        <Text className="mb-3 text-lg font-extrabold text-slate-900">
-          Today's Overview
-        </Text>
-
-        <View className="mb-7 flex-row gap-3">
-          {/* Products */}
-          <View className="flex-1 rounded-[18px] border border-slate-200 bg-white p-4">
-            <View className="mb-3.5 h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-blue-50">
+          <View className="relative">
+            <View className="mt-4 mb-5 h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
               <Ionicons
-                name="cube-outline"
-                size={21}
+                name="barcode-outline"
+                size={27}
+                color="white"
+              />
+            </View>
+
+            <Text className="text-xl font-bold text-white">
+              Count Inventory
+            </Text>
+
+            <Text className="mt-2 max-w-[290px] text-sm leading-5 text-blue-100">
+              Scan a barcode or enter it manually to start counting.
+            </Text>
+
+            <Pressable
+              onPress={() => router.push("/product-lookup")}
+              className="mt-5 flex-row items-center justify-center rounded-2xl bg-white px-5 py-3.5"
+            >
+              <Ionicons
+                name="scan-outline"
+                size={19}
                 color="#2563EB"
               />
+
+              <Text className="ml-2 font-bold text-blue-600">
+                Start Scanning
+              </Text>
+
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color="#2563EB"
+                style={{ marginLeft: 7 }}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Today's Overview */}
+        <View className="px-5 pt-12">
+          <View className="mb-4 flex-row items-center justify-between">
+            <View>
+              <Text className="text-lg font-bold text-gray-900">
+                Today&apos;s Overview
+              </Text>
+
+              <Text className="mt-1 text-xs text-gray-400">
+                Live data from your local inventory
+              </Text>
             </View>
 
-            <Text className="text-2xl font-extrabold text-slate-900">
-              0
-            </Text>
+            <View className="flex-row items-center rounded-full bg-green-50 px-3 py-1.5">
+              <View className="mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500" />
 
-            <Text className="mt-0.5 text-[13px] text-slate-500">
-              Products
-            </Text>
+              <Text className="text-[11px] font-semibold text-green-600">
+                {loading ? "Updating" : "Live"}
+              </Text>
+            </View>
           </View>
 
-          {/* Pending */}
-          <View className="flex-1 rounded-[18px] border border-slate-200 bg-white p-4">
-            <View className="mb-3.5 h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-orange-50">
-              <Ionicons
-                name="time-outline"
-                size={21}
-                color="#EA580C"
-              />
-            </View>
+          <View className="flex-row gap-4">
+            <OverviewCard
+              icon="cube-outline"
+              title="Products"
+              value={totalProducts}
+              subtitle="Inventory records"
+            />
 
-            <Text className="text-2xl font-extrabold text-slate-900">
-              0
-            </Text>
+            <OverviewCard
+              icon="time-outline"
+              title="Pending"
+              value={pendingCounts}
+              subtitle="Need submission"
+            />
+          </View>
 
-            <Text className="mt-0.5 text-[13px] text-slate-500">
-              Pending
-            </Text>
+          <View className="mt-4 flex-row gap-3">
+            <OverviewCard
+              icon="checkmark-circle-outline"
+              title="Submitted"
+              value={submittedCounts}
+              subtitle="Completed counts"
+            />
+
+            <OverviewCard
+              icon="alert-circle-outline"
+              title="Expired"
+              value={expiredCounts}
+              subtitle="Expired products"
+            />
           </View>
         </View>
 
         {/* Product Lookup */}
-        <Link href="/product-lookup" asChild>
-          <Pressable className="mb-7 flex-row items-center justify-center rounded-[14px] border border-blue-100 bg-blue-50 px-4 py-3 active:opacity-70">
-            <Ionicons
-              name="search-outline"
-              size={18}
-              color="#2563EB"
-            />
+        <View className="px-5 pt-14">
+          <Text className="mb-2 text-lg font-bold text-gray-900">
+            Product Lookup
+          </Text>
 
-            <Text className="ml-2 text-sm font-semibold text-blue-700">
-              Open Product Lookup
-            </Text>
+          <Pressable
+            onPress={() => router.push("/product-lookup")}
+            className="flex-row items-center rounded-2xl border border-gray-100 bg-white p-4"
+          >
+            <View className="mr-4 h-11 w-11 items-center justify-center rounded-xl bg-gray-100">
+              <Ionicons
+                name="search-outline"
+                size={21}
+                color="#374151"
+              />
+            </View>
+
+            <View className="flex-1">
+              <Text className="text-[15px] font-semibold text-gray-900">
+                Find a Product
+              </Text>
+
+              <Text className="mt-1 text-xs text-gray-500">
+                Search using a barcode
+              </Text>
+            </View>
 
             <Ionicons
-              name="arrow-forward"
-              size={16}
-              color="#2563EB"
-              style={{ marginLeft: 6 }}
+              name="chevron-forward"
+              size={19}
+              color="#9CA3AF"
             />
           </Pressable>
-        </Link>
+        </View>
 
         {/* Quick Actions */}
-        <Text className="mb-3 text-lg font-extrabold text-slate-900">
-          Quick Actions
-        </Text>
+        <View className="px-5 pt-10">
+          <Text className="mb-4 text-lg font-bold text-gray-900">
+            Quick Actions
+          </Text>
 
-        {/* Manual Entry */}
-        <Pressable
-          onPress={() => router.push("/product-lookup")}
-          className="mb-2.5 min-h-[72px] flex-row items-center rounded-[18px] border border-slate-200 bg-white px-[15px] active:opacity-70"
-        >
-          <View className="h-11 w-11 items-center justify-center rounded-[13px] bg-blue-50">
+          <ActionButton
+            icon="create-outline"
+            title="Manual Entry"
+            subtitle="Enter a barcode manually"
+            onPress={() => router.push("/product-lookup")}
+          />
+
+          <ActionButton
+            icon="list-outline"
+            title="Inventory Records"
+            subtitle={`${totalProducts} record${
+              totalProducts === 1 ? "" : "s"
+            } saved locally`}
+            onPress={() => router.push("/(tabs)/inventory")}
+          />
+
+          <ActionButton
+            icon="time-outline"
+            title="Pending Counts"
+            subtitle={`${pendingCounts} count${
+              pendingCounts === 1 ? "" : "s"
+            } waiting for submission`}
+            onPress={() => router.push("/(tabs)/inventory")}
+          />
+        </View>
+
+        {/* Footer */}
+        <View className="items-center px-5 pt-10">
+          <View className="mb-2 h-8 w-8 items-center justify-center rounded-full bg-blue-50">
             <Ionicons
-              name="create-outline"
-              size={22}
+              name="shield-checkmark-outline"
+              size={17}
               color="#2563EB"
             />
           </View>
 
-          <View className="ml-[13px] flex-1">
-            <Text className="text-[15px] font-bold text-slate-900">
-              Manual Entry
-            </Text>
+          <Text className="text-xs font-medium text-gray-500">
+            Your inventory is saved locally
+          </Text>
 
-            <Text className="mt-0.5 text-xs text-slate-500">
-              Enter a barcode manually
-            </Text>
-          </View>
-
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color="#94A3B8"
-          />
-        </Pressable>
-
-        {/* Pending Counts */}
-        <Pressable
-          onPress={() => router.push("/(tabs)/inventory")}
-          className="min-h-[72px] flex-row items-center rounded-[18px] border border-slate-200 bg-white px-[15px] active:opacity-70"
-        >
-          <View className="h-11 w-11 items-center justify-center rounded-[13px] bg-orange-50">
-            <Ionicons
-              name="cloud-upload-outline"
-              size={22}
-              color="#EA580C"
-            />
-          </View>
-
-          <View className="ml-[13px] flex-1">
-            <Text className="text-[15px] font-bold text-slate-900">
-              Pending Counts
-            </Text>
-
-            <Text className="mt-0.5 text-xs text-slate-500">
-              View unsent inventory records
-            </Text>
-          </View>
-
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color="#94A3B8"
-          />
-        </Pressable>
+          <Text className="mt-1 text-[10px] text-gray-400">
+            Works offline and syncs when available
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,50 +1,376 @@
-# Welcome to your Expo app 👋
+# Barcode Inventory Counter
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern Android inventory management application built with **Expo, React Native, TypeScript, NativeWind, and SQLite**.
 
-## Get started
+The app is designed to make physical inventory counting faster and more reliable by allowing users to scan product barcodes, maintain product information, record stock quantities, validate expiry dates, and export inventory records as CSV.
 
-1. Install dependencies
+## ✨ Features
 
-   ```bash
-   npm install
-   ```
+* 📷 Barcode scanning using the device camera
+* ⌨️ Manual barcode entry
+* 🔎 Product lookup
+* 🆕 Add new products when a barcode is not found
+* 💾 Local SQLite database for offline-first inventory management
+* 📦 Expected quantity and actual quantity tracking
+* ➕ Automatic quantity difference calculation
+* 🔄 Duplicate barcode count merging
+* 📅 Expiry date selection and validation
+* ⚠️ Expired product detection
+* 📋 Pending and submitted inventory status
+* 🔁 Local retry flow for inventory submission
+* 📊 Dashboard with inventory statistics
+* 📄 CSV inventory export
+* 📤 Android share sheet for exported CSV files
+* 🎨 Responsive and modern mobile UI
+* ✨ Animated splash screen
+* 🧪 Unit tests for inventory validation utilities
 
-2. Start the app
+## 🛠️ Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+| Technology      | Purpose                             |
+| --------------- | ----------------------------------- |
+| Expo            | React Native development platform   |
+| React Native    | Mobile application framework        |
+| Expo Router     | File-based navigation               |
+| TypeScript      | Type-safe development               |
+| NativeWind      | Utility-first styling               |
+| SQLite          | Local inventory and product storage |
+| Expo Camera     | Barcode scanning                    |
+| Expo FileSystem | CSV file creation                   |
+| Expo Sharing    | Sharing exported inventory files    |
+| Jest            | Unit testing                        |
+| Jest Expo       | Expo-compatible testing environment |
 
-In the output, you'll find options to open the app in a
+## 📱 Application Flow
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+Splash Screen
+     ↓
+Dashboard
+     ↓
+Scan / Enter Barcode
+     ↓
+Product Lookup
+     ↓
+ ┌───────────────────────┐
+ │ Product Found         │
+ │         OR            │
+ │ Product Not Found     │
+ └───────────────────────┘
+     ↓
+Inventory Count
+     ↓
+Validate Quantity
+     ↓
+Validate Expiry Date
+     ↓
+Save to SQLite
+     ↓
+Pending / Submitted
+     ↓
+Export Inventory as CSV
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 📂 Project Structure
 
-## Learn more
+```text
+Barcode-Inventory-Counter/
+│
+├── app/
+│   ├── _layout.tsx
+│   ├── index.tsx
+│   ├── modal.tsx
+│   │
+│   └── (tabs)/
+│       ├── _layout.tsx
+│       ├── index.tsx
+│       └── inventory.tsx
+│
+├── components/
+│   └── ...
+│
+├── constants/
+│   └── ...
+│
+├── database/
+│   ├── inventory-db.ts
+│   └── product-db.ts
+│
+├── services/
+│   ├── inventory-export.ts
+│   ├── inventory-service.ts
+│   └── product-service.ts
+│
+├── tests/
+│   └── inventory-validation.test.ts
+│
+├── types/
+│   └── inventory.ts
+│
+├── utils/
+│   └── inventory-validation.ts
+│
+├── assets/
+│   └── ...
+│
+├── AI_USAGE.md
+├── README.md
+├── package.json
+└── tsconfig.json
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 💾 Local Database
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+The application uses SQLite for local persistence.
 
-## Join the community
+### Products
 
-Join our community of developers creating universal apps.
+The products table stores:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+* Barcode
+* Product name
+* Expected quantity
+* Creation timestamp
+
+### Inventory Counts
+
+The inventory counts table stores:
+
+* Inventory ID
+* Barcode
+* Product name
+* Expected quantity
+* Actual quantity
+* Difference
+* Expiry date
+* Status
+* Creation timestamp
+
+The database allows inventory data to remain available even when the device is offline.
+
+## 🔢 Inventory Calculation
+
+The application calculates the inventory difference using:
+
+```text
+Difference = Actual Quantity - Expected Quantity
+```
+
+For example:
+
+```text
+Expected Quantity = 20
+Actual Quantity   = 17
+
+Difference = 17 - 20
+           = -3
+```
+
+A negative difference indicates that fewer items were counted than expected.
+
+## 📅 Expiry Validation
+
+The application prevents users from creating inventory records with an expiry date in the past.
+
+Expiry dates are stored and displayed using a user-friendly date format.
+
+The application also identifies existing expired inventory records so they can be clearly highlighted.
+
+## 📷 Barcode Scanning
+
+The camera scanner supports commonly used barcode formats including:
+
+* EAN-13
+* EAN-8
+* UPC-A
+* UPC-E
+* Code 128
+* Code 39
+* Code 93
+* ITF-14
+* Codabar
+* QR codes
+
+Users can also enter a barcode manually when camera scanning is not suitable.
+
+## 🌐 Product Lookup
+
+Product lookup follows a local-first approach:
+
+```text
+Barcode
+   ↓
+Local SQLite Database
+   ↓
+Mock / Available Product Data
+   ↓
+Open Food Facts API
+   ↓
+Product Found?
+   ├── Yes → Save Product Locally
+   └── No  → Add New Product
+```
+
+Saving discovered products locally reduces the need to repeatedly request external product information.
+
+## 📄 CSV Export
+
+Inventory records can be exported as a CSV file.
+
+The exported data includes inventory information such as:
+
+* Barcode
+* Product name
+* Expected quantity
+* Actual quantity
+* Difference
+* Expiry date
+* Status
+* Creation date
+
+On Android, the generated CSV can be shared through the system share sheet.
+
+## 🔄 Inventory Submission
+
+The current project uses a simulated inventory submission service for the assessment.
+
+The service validates the inventory data locally and simulates a submission request.
+
+It is structured as a separate service so it can be replaced with a real backend API in the future without changing the inventory UI and database architecture.
+
+## 🧪 Testing
+
+Unit tests are included for inventory validation utilities.
+
+Run:
+
+```bash
+npm test
+```
+
+For watch mode:
+
+```bash
+npm run test:watch
+```
+
+The tests cover functionality including:
+
+* Quantity validation
+* Difference calculation
+* Date parsing
+* Expiry validation
+* Expired inventory detection
+
+## 🚀 Getting Started
+
+### Requirements
+
+Make sure you have:
+
+* Node.js installed
+* npm installed
+* Android Studio / Android emulator, or
+* A physical Android device
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/kaiwebcode/Barcode-Inventory-Counter.git
+```
+
+Move into the project:
+
+```bash
+cd Barcode-Inventory-Counter
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the Expo development server:
+
+```bash
+npx expo start
+```
+
+For Android:
+
+```bash
+npx expo start --android
+```
+
+To clear the Expo cache:
+
+```bash
+npx expo start -c
+```
+
+## 🔍 Type Checking
+
+Run TypeScript checking with:
+
+```bash
+npx tsc --noEmit
+```
+
+The project should complete without TypeScript errors.
+
+## 📦 Building the Android APK
+
+The Android application can be built using Expo's build tooling.
+
+For a development build:
+
+```bash
+npx expo run:android
+```
+
+For an EAS Android build, configure EAS and run:
+
+```bash
+npx eas build -p android
+```
+
+The resulting APK/AAB can then be used for testing or submission according to the assessment requirements.
+
+## 🔐 Privacy & Data
+
+Inventory and product records are primarily stored locally using SQLite.
+
+The application does not require a user account for the core local inventory functionality.
+
+External product information may be requested when a barcode is not available locally.
+
+## 🎯 Assessment Notes
+
+This project was developed as part of a technical assessment.
+
+The application focuses on:
+
+* Practical mobile UX
+* Barcode-based inventory workflows
+* Offline/local data persistence
+* Data validation
+* Reusable service architecture
+* Error handling
+* Automated testing
+* CSV data export
+* Responsive UI design
+
+## 👨‍💻 Author
+
+**Kaif Qureshi**
+
+Frontend / Full-Stack Developer
+
+Built with React Native, Expo, TypeScript, SQLite, and NativeWind.
+
+## 📄 License
+
+This project was created for educational and technical assessment purposes.
