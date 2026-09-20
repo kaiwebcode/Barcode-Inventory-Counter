@@ -192,10 +192,7 @@ export default function InventoryCountScreen() {
 
     const parsedActualQuantity = Number(actualQuantity);
 
-    if (
-      !Number.isInteger(parsedActualQuantity) ||
-      parsedActualQuantity < 0
-    ) {
+    if (!Number.isInteger(parsedActualQuantity) || parsedActualQuantity < 0) {
       setError("Actual quantity must be a valid whole number.");
       return;
     }
@@ -273,7 +270,7 @@ export default function InventoryCountScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ==================== HEADER ==================== */}
+          {/* HEADER */}
           <View className="flex-row items-center py-3">
             <Pressable
               onPress={() => router.back()}
@@ -296,14 +293,10 @@ export default function InventoryCountScreen() {
             </View>
           </View>
 
-          {/* ==================== ERROR ==================== */}
+          {/* ERROR */}
           {error ? (
             <View className="mb-4 flex-row rounded-2xl border border-red-200 bg-red-50 p-3.5">
-              <Ionicons
-                name="alert-circle-outline"
-                size={20}
-                color="#DC2626"
-              />
+              <Ionicons name="alert-circle-outline" size={20} color="#DC2626" />
 
               <Text className="ml-2 flex-1 text-sm leading-5 text-red-700">
                 {error}
@@ -311,7 +304,7 @@ export default function InventoryCountScreen() {
             </View>
           ) : null}
 
-          {/* ==================== PRODUCT INFORMATION ==================== */}
+          {/* PRODUCT INFORMATION */}
           <View className="rounded-[20px] border border-slate-200 bg-white p-5">
             <View className="flex-row items-center">
               <View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50">
@@ -346,7 +339,7 @@ export default function InventoryCountScreen() {
             </View>
           </View>
 
-          {/* ==================== EXPECTED QUANTITY ==================== */}
+          {/* EXPECTED QUANTITY  */}
           <View className="mt-4 rounded-[20px] border border-blue-100 bg-blue-50 p-5">
             <View className="flex-row items-center justify-between">
               <View>
@@ -360,16 +353,12 @@ export default function InventoryCountScreen() {
               </View>
 
               <View className="h-11 w-11 items-center justify-center rounded-xl bg-white">
-                <Ionicons
-                  name="layers-outline"
-                  size={22}
-                  color="#2563EB"
-                />
+                <Ionicons name="layers-outline" size={22} color="#2563EB" />
               </View>
             </View>
           </View>
 
-          {/* ==================== ACTUAL QUANTITY ==================== */}
+          {/* ACTUAL QUANTITY */}
           <View className="mt-4 rounded-[20px] border border-slate-200 bg-white p-5">
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
@@ -383,11 +372,7 @@ export default function InventoryCountScreen() {
               </View>
 
               <View className="h-9 w-9 items-center justify-center rounded-xl bg-slate-100">
-                <Ionicons
-                  name="calculator-outline"
-                  size={18}
-                  color="#475569"
-                />
+                <Ionicons name="calculator-outline" size={18} color="#475569" />
               </View>
             </View>
 
@@ -403,7 +388,7 @@ export default function InventoryCountScreen() {
             />
           </View>
 
-          {/* ==================== DIFFERENCE ==================== */}
+          {/* DIFFERENCE */}
           <View className="mt-4 flex-row items-center justify-between rounded-[18px] border border-slate-200 bg-white px-5 py-4">
             <View>
               <Text className="text-xs font-semibold text-slate-500">
@@ -447,15 +432,11 @@ export default function InventoryCountScreen() {
             </View>
           </View>
 
-          {/* ==================== EXPIRY DATE ==================== */}
+          {/* EXPIRY DATE */}
           <View className="mt-4 rounded-[20px] border border-slate-200 bg-white p-5">
             <View className="flex-row items-center">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color="#2563EB"
-                />
+                <Ionicons name="calendar-outline" size={20} color="#2563EB" />
               </View>
 
               <View className="ml-3 flex-1">
@@ -497,11 +478,7 @@ export default function InventoryCountScreen() {
                 </Text>
               </View>
 
-              <Ionicons
-                name="chevron-down"
-                size={18}
-                color="#64748B"
-              />
+              <Ionicons name="chevron-down" size={18} color="#64748B" />
             </Pressable>
 
             {/* Native Date Picker */}
@@ -523,11 +500,7 @@ export default function InventoryCountScreen() {
             {/* Selected Date Confirmation */}
             {expiryDate ? (
               <View className="mt-3 flex-row items-center rounded-xl bg-green-50 px-3 py-2.5">
-                <Ionicons
-                  name="checkmark-circle"
-                  size={17}
-                  color="#16A34A"
-                />
+                <Ionicons name="checkmark-circle" size={17} color="#16A34A" />
 
                 <Text className="ml-2 text-xs font-semibold text-green-700">
                   Expiry date selected
@@ -569,7 +542,7 @@ export default function InventoryCountScreen() {
             )}
           </Pressable>
 
-          {/* ==================== LOCAL STORAGE INFO ==================== */}
+          {/* LOCAL STORAGE INFO  */}
           <View className="mt-3 flex-row items-center justify-center px-4">
             <Ionicons
               name="shield-checkmark-outline"
