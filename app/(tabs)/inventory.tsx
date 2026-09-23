@@ -5,24 +5,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { exportInventoryToCsv } from "@/services/inventory-export";
-import { isInventoryExpiryExpired } from "@/utils/inventory-validation";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 
 import {
   getInventoryCounts,
   updateInventoryStatus,
 } from "@/database/inventory-db";
+
+import { exportInventoryToCsv } from "@/services/inventory-export";
 import { submitInventoryCount } from "@/services/inventory-service";
+
 import type { InventoryCount } from "@/types/inventory";
+
+import { isInventoryExpiryExpired } from "@/utils/inventory-validation";
 
 export default function InventoryScreen() {
   const router = useRouter();
@@ -35,6 +38,10 @@ export default function InventoryScreen() {
 
   // Prevent multiple automatic retry processes
   const retryingRef = useRef(false);
+
+  /* ------------------------------------------------------------------------ */
+  /* Load inventory                                                           */
+  /* ------------------------------------------------------------------------ */
 
   const loadInventory = useCallback(async () => {
     try {
@@ -53,15 +60,20 @@ export default function InventoryScreen() {
     }
   }, []);
 
+  /* ------------------------------------------------------------------------ */
+  /* Refresh whenever screen gets focus                                       */
+  /* ------------------------------------------------------------------------ */
+
   useFocusEffect(
     useCallback(() => {
       loadInventory();
     }, [loadInventory]),
   );
 
-  /**
-   * Submit one pending inventory record.
-   */
+  /* ------------------------------------------------------------------------ */
+  /* Submit one inventory record                                              */
+  /* ------------------------------------------------------------------------ */
+
   const submitSingleInventory = useCallback(async (count: InventoryCount) => {
     try {
       const response = await submitInventoryCount(count);
@@ -80,9 +92,10 @@ export default function InventoryScreen() {
     }
   }, []);
 
-  /**
-   * Automatically retry pending records when internet comes back.
-   */
+  /* ------------------------------------------------------------------------ */
+  /* Automatically retry pending submissions                                  */
+  /* ------------------------------------------------------------------------ */
+
   const retryPendingSubmissions = useCallback(async () => {
     if (retryingRef.current) {
       return;
@@ -131,9 +144,10 @@ export default function InventoryScreen() {
     }
   }, [loadInventory, submitSingleInventory]);
 
-  /**
-   * Watch network changes.
-   */
+  /* ------------------------------------------------------------------------ */
+  /* Watch network changes                                                    */
+  /* ------------------------------------------------------------------------ */
+
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const online =
@@ -147,9 +161,10 @@ export default function InventoryScreen() {
     return unsubscribe;
   }, [retryPendingSubmissions]);
 
-  /**
-   * Pull-to-refresh.
-   */
+  /* ------------------------------------------------------------------------ */
+  /* Pull to refresh                                                          */
+  /* ------------------------------------------------------------------------ */
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
 
@@ -160,9 +175,10 @@ export default function InventoryScreen() {
     }
   }, [isOnline, loadInventory, retryPendingSubmissions]);
 
-  /**
-   * Manually submit one inventory record.
-   */
+  /* ------------------------------------------------------------------------ */
+  /* Manually submit one record                                               */
+  /* ------------------------------------------------------------------------ */
+
   const handleSubmit = useCallback(
     async (count: InventoryCount) => {
       if (count.status === "submitted") {
@@ -211,6 +227,10 @@ export default function InventoryScreen() {
     [isOnline, loadInventory, submittingId, submitSingleInventory],
   );
 
+  /* ------------------------------------------------------------------------ */
+  /* Summary counts                                                           */
+  /* ------------------------------------------------------------------------ */
+
   const pendingCount = counts.filter(
     (count) => count.status === "pending",
   ).length;
@@ -219,12 +239,17 @@ export default function InventoryScreen() {
     (count) => count.status === "submitted",
   ).length;
 
+  /* ------------------------------------------------------------------------ */
+  /* Export CSV                                                               */
+  /* ------------------------------------------------------------------------ */
+
   const handleExportCsv = useCallback(async () => {
     if (counts.length === 0) {
       Alert.alert(
         "Nothing to export",
         "Add at least one inventory record before exporting.",
       );
+
       return;
     }
 
@@ -242,42 +267,41 @@ export default function InventoryScreen() {
     }
   }, [counts]);
 
+  /* ------------------------------------------------------------------------ */
+  /* Render                                                                   */
+  /* ------------------------------------------------------------------------ */
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-5 pb-10"
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      >
-        {/* Offline Banner */}
-        {!isOnline && (
-          <View className="mb-4 mt-2 flex-row items-center rounded-2xl border border-orange-200 bg-orange-50 p-3.5">
-            <View className="h-9 w-9 items-center justify-center rounded-xl bg-orange-100">
-              <Ionicons
-                name="cloud-offline-outline"
-                size={19}
-                color="#C2410C"
-              />
-            </View>
+      {/* ------------------------------------------------------------------ */}
+      {/* Offline Banner - Fixed                                             */}
+      {/* ------------------------------------------------------------------ */}
 
-            <View className="ml-3 flex-1">
-              <Text className="text-sm font-bold text-orange-800">
-                You're offline
-              </Text>
-
-              <Text className="mt-0.5 text-xs leading-4 text-orange-700">
-                New inventory stays saved locally and will sync when you're back
-                online.
-              </Text>
-            </View>
+      {!isOnline && (
+        <View className="mx-5 mb-3 mt-2 flex-row items-center rounded-2xl border border-orange-200 bg-orange-50 p-3.5">
+          <View className="h-9 w-9 items-center justify-center rounded-xl bg-orange-100">
+            <Ionicons name="cloud-offline-outline" size={19} color="#C2410C" />
           </View>
-        )}
 
-        {/* Header */}
-        <View className="flex-row items-center justify-between pb-6 pt-2">
+          <View className="ml-3 flex-1">
+            <Text className="text-sm font-bold text-orange-800">
+              You're offline
+            </Text>
+
+            <Text className="mt-0.5 text-xs leading-4 text-orange-700">
+              New inventory stays saved locally and will sync when you're back
+              online.
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Fixed Header                                                        */}
+      {/* ------------------------------------------------------------------ */}
+
+      <View className="px-5">
+        <View className="flex-row items-center justify-between pb-5 pt-2">
           <View className="flex-1 pr-4">
             <Text className="text-[28px] font-extrabold tracking-tight text-slate-900">
               Inventory
@@ -289,6 +313,7 @@ export default function InventoryScreen() {
           </View>
 
           <View className="flex-row items-center gap-2">
+            {/* Export */}
             <Pressable
               onPress={handleExportCsv}
               disabled={loading || counts.length === 0}
@@ -303,6 +328,7 @@ export default function InventoryScreen() {
               <Ionicons name="download-outline" size={21} color="#2563EB" />
             </Pressable>
 
+            {/* Add */}
             <Pressable
               onPress={() => router.push("/product-lookup")}
               className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 active:opacity-80"
@@ -314,8 +340,11 @@ export default function InventoryScreen() {
           </View>
         </View>
 
-        {/* Summary */}
-        <View className="mb-6 flex-row gap-3">
+        {/* ---------------------------------------------------------------- */}
+        {/* Summary Cards - Fixed                                            */}
+        {/* ---------------------------------------------------------------- */}
+
+        <View className="mb-5 flex-row gap-3">
           <SummaryCard
             label="Total"
             value={counts.length}
@@ -340,78 +369,98 @@ export default function InventoryScreen() {
             iconColor="#16A34A"
           />
         </View>
+      </View>
 
-        {/* Loading */}
-        {loading && (
-          <View className="items-center justify-center rounded-[20px] border border-slate-200 bg-white px-6 py-10">
-            <ActivityIndicator size="small" color="#2563EB" />
+      {/* ------------------------------------------------------------------ */}
+      {/* Loading                                                             */}
+      {/* ------------------------------------------------------------------ */}
 
-            <Text className="mt-3 text-sm text-slate-500">
-              Loading inventory...
-            </Text>
+      {loading ? (
+        <View className="mx-5 flex-1 items-center justify-center rounded-[20px] border border-slate-200 bg-white">
+          <ActivityIndicator size="small" color="#2563EB" />
+
+          <Text className="mt-3 text-sm text-slate-500">
+            Loading inventory...
+          </Text>
+        </View>
+      ) : counts.length === 0 ? (
+        /* ---------------------------------------------------------------- */
+        /* Empty State                                                       */
+        /* ---------------------------------------------------------------- */
+
+        <View className="mx-5 flex-1 items-center justify-center rounded-[22px] border border-dashed border-slate-300 bg-white px-6">
+          <View className="mb-4 h-[72px] w-[72px] items-center justify-center rounded-[22px] bg-blue-50">
+            <Ionicons name="cube-outline" size={34} color="#2563EB" />
           </View>
-        )}
 
-        {/* Empty */}
-        {!loading && counts.length === 0 && (
-          <View className="items-center rounded-[22px] border border-dashed border-slate-300 bg-white px-6 py-10">
-            <View className="mb-4 h-[72px] w-[72px] items-center justify-center rounded-[22px] bg-blue-50">
-              <Ionicons name="cube-outline" size={34} color="#2563EB" />
-            </View>
+          <Text className="text-lg font-extrabold text-slate-900">
+            No inventory records
+          </Text>
 
+          <Text className="mt-2 text-center text-sm leading-5 text-slate-500">
+            Scan or enter a product barcode to start recording your inventory.
+          </Text>
+
+          <Pressable
+            onPress={() => router.push("/product-lookup")}
+            className="mt-5 min-h-[48px] flex-row items-center justify-center rounded-2xl bg-blue-600 px-5 active:opacity-80"
+          >
+            <Ionicons name="barcode-outline" size={19} color="#FFFFFF" />
+
+            <Text className="ml-2 text-sm font-bold text-white">
+              Add Inventory
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        /* ---------------------------------------------------------------- */
+        /* Inventory Records - ONLY THIS AREA SCROLLS                       */
+        /* ---------------------------------------------------------------- */
+
+        <View className="flex-1">
+          {/* Records Header */}
+          <View className="mb-2 flex-row items-center justify-between px-5">
             <Text className="text-lg font-extrabold text-slate-900">
-              No inventory records
+              Inventory Records
             </Text>
 
-            <Text className="mt-2 text-center text-sm leading-5 text-slate-500">
-              Scan or enter a product barcode to start recording your inventory.
+            <Text className="text-xs font-semibold text-slate-500">
+              {counts.length} {counts.length === 1 ? "record" : "records"}
             </Text>
-
-            <Pressable
-              onPress={() => router.push("/product-lookup")}
-              className="mt-5 min-h-[48px] flex-row items-center justify-center rounded-2xl bg-blue-600 px-5 active:opacity-80"
-            >
-              <Ionicons name="barcode-outline" size={19} color="#FFFFFF" />
-
-              <Text className="ml-2 text-sm font-bold text-white">
-                Add Inventory
-              </Text>
-            </Pressable>
           </View>
-        )}
 
-        {/* Records */}
-        {!loading && counts.length > 0 && (
-          <View>
-            <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-lg font-extrabold text-slate-900">
-                Inventory Records
-              </Text>
-
-              <Text className="text-xs font-semibold text-slate-500">
-                {counts.length} {counts.length === 1 ? "record" : "records"}
-              </Text>
-            </View>
-
-            {counts.map((count) => (
+          {/* FlatList */}
+          <FlatList
+            data={counts}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerClassName="px-5 pb-[120px]"
+            contentInsetAdjustmentBehavior="automatic"
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
+            renderItem={({ item }) => (
               <InventoryCard
-                key={count.id}
-                count={count}
+                count={item}
                 isOnline={isOnline}
-                isSubmitting={submittingId === count.id}
+                isSubmitting={submittingId === item.id}
                 onSubmit={handleSubmit}
               />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+            )}
+            ItemSeparatorComponent={() => <View className="h-3.5" />}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
 /* Summary Card                                                               */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
 
 type SummaryCardProps = {
   label: string;
@@ -443,9 +492,9 @@ function SummaryCard({
   );
 }
 
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
 /* Inventory Card                                                             */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
 
 type InventoryCardProps = {
   count: InventoryCount;
@@ -471,7 +520,7 @@ function InventoryCard({
         : "text-slate-500";
 
   return (
-    <View className="mb-3.5 rounded-[20px] border border-slate-200 bg-white p-4">
+    <View className="rounded-[20px] border border-slate-200 bg-white p-4">
       {/* Product */}
       <View className="flex-row items-start">
         <View className="h-11 w-11 items-center justify-center rounded-[13px] bg-blue-50">
@@ -491,6 +540,7 @@ function InventoryCard({
           </Text>
         </View>
 
+        {/* Status */}
         <View
           className={`rounded-full px-2.5 py-1.5 ${
             isSubmitted ? "bg-green-50" : "bg-orange-50"
@@ -595,9 +645,9 @@ function InventoryCard({
   );
 }
 
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
 /* Quantity Item                                                              */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
 
 type QuantityItemProps = {
   label: string;
